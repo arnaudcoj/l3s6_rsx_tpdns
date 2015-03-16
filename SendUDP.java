@@ -66,7 +66,7 @@ public class SendUDP {
 	i += 2;
 
 	//NOM
-	int taillechaine = getEndOfString(msgR);
+	int taillechaine = getEndOfString(msgR, 12);
 	for(; i < taillechaine; i++)
 	    System.out.print((char) msgR[i]);
 	System.out.println(" : URL");
@@ -107,8 +107,7 @@ public class SendUDP {
 	    return res;
     }
 
-    public static int getEndOfString(byte[] t) {
-	int i = 12;
+    public static int getEndOfString(byte[] t, int i) {
 	while (t[i] != 0) {
 	    int c = t[i] & 0xff;
 	    if (c >= 192)
