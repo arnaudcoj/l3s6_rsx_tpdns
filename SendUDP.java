@@ -21,6 +21,7 @@ public class SendUDP {
 	DatagramPacket packetR = new DatagramPacket(new byte[512], 512);
 	InetAddress dst = InetAddress.getByName("172.18.12.9");
 	int port = 53;
+	int i;
 	byte[] msgS = {(byte) 0x08, (byte) 0xbb, (byte) 0x01, (byte) 0x00,
 		       (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x00,
 		       (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
@@ -38,33 +39,40 @@ public class SendUDP {
 	socket.receive(packetR);
 	byte msgR[] = packetR.getData();
 	System.out.println("paquet reçu hexa");
-	for(int i = 0; i < packetR.getLength(); i++) {
+	for(i = 0; i < packetR.getLength(); i++) {
 	    System.out.print("," + getHexStr(msgR[i] & 0xff));
 	    if( (i+1) % 16 == 0)
 		System.out.println("");
 	}
 	System.out.println("\n\npaquet reçu déc");
-	for(int i = 0; i < packetR.getLength(); i++) {
+	for(i = 0; i < packetR.getLength(); i++) {
 	    System.out.print("," + getShortValue(msgR, i));
 	    if( (i+1) % 16 == 0)
 		System.out.println("");
 	}
 	System.out.println("\n/////DECRYPTAGE/////");
 	//2e partie decryptage
-	
-	System.out.println(getHexStr(msgR[0]) + ',' + getHexStr(msgR[1]) + " : IDENTIFIANT"); // IDENTIFIANT
-	System.out.println(getParamStr(getShortValue(msgR, 2)));
-	System.out.println(getShortValue(msgR, 4) + " : QUESTION");
-	System.out.println(getShortValue(msgR, 6) + " : REPONSE");
-	System.out.println(getShortValue(msgR, 8) + " : AUTORITE");
-	System.out.println(getShortValue(msgR, 8) + " : INFOS COMPLEMENTAIRES");
-	System.out.println((char) (msgR[10]));
+	i = 0;
+	System.out.println(getHexStr(msgR[i++]) + ',' + getHexStr(msgR[i++]) + " : IDENTIFIANT");
+	System.out.println(getParamStr(getShortValue(msgR, i))); // PARAMETRES
+	i += 2;
+	System.out.println(getShortValue(msgR, i) + " : QUESTION");
+	i += 2;
+	System.out.println(getShortValue(msgR, i) + " : REPONSE");
+	i += 2;
+	System.out.println(getShortValue(msgR, i) + " : AUTORITE");
+	i += 2;
+	System.out.println(getShortValue(msgR, i) + " : INFOS COMPLEMENTAIRES");
+	i += 2;
 
 	//NOM
 	int taillechaine = getEndOfString(msgR);
-
-	for(int i = 12; i < taillechaine; i++)
+	for(; i < taillechaine; i++)
 	    System.out.print((char) msgR[i]);
+	System.out.println(" : URL");
+	
+	System.out.println(getHexStr(msgR[i++]) + ',' + getHexStr(msgR[i++]) + " : TYPE (HOST ADDRESS)");
+	System.out.println(getHexStr(msgR[i++]) + ',' + getHexStr(msgR[i++]) + " : CLASS (INTERNET)");
 
 	System.out.println("");
 
