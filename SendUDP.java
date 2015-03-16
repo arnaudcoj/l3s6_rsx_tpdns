@@ -39,7 +39,7 @@ public class SendUDP {
 	byte msgR[] = packetR.getData();
 	System.out.println("paquet reçu hexa");
 	for(int i = 0; i < packetR.getLength(); i++) {
-	    System.out.print("," + Integer.toHexString(msgR[i] & 0xff));
+	    System.out.print("," + getHexStr(msgR[i] & 0xff));
 	    if( (i+1) % 16 == 0)
 		System.out.println("");
 	}
@@ -49,15 +49,19 @@ public class SendUDP {
 	    if( (i+1) % 16 == 0)
 		System.out.println("");
 	}
-	System.out.println("");
+	System.out.println("\n/////DECRYPTAGE/////");
 	//2e partie decryptage
-	/*
+	
 	System.out.println(getHexStr(msgR[0]) + ',' + getHexStr(msgR[1]) + " : IDENTIFIANT"); // IDENTIFIANT
-	System.out.println(Integer.toBinaryString(msgR[2]) + ',' + Integer.toBinaryString(msgR[3]));
-	*/
+	System.out.println(getParamStr(getShortValue(msgR, 2)));
+	System.out.println(getShortValue(msgR, 4) + " : QUESTION");
+	System.out.println(getShortValue(msgR, 6) + " : REPONSE");
+	System.out.println(getShortValue(msgR, 8) + " : AUTORITE");
+	System.out.println(getShortValue(msgR, 8) + " : INFOS COMPLEMENTAIRES");
+	System.out.println((char) (msgR[10]));
 
 	//NOM
-	int taillechaine = getEndOfString(msgR, 12);
+	int taillechaine = getEndOfString(msgR);
 
 	for(int i = 12; i < taillechaine; i++)
 	    System.out.print((char) msgR[i]);
@@ -65,6 +69,22 @@ public class SendUDP {
 	System.out.println("");
 
 	socket.close(); 
+    }
+
+    public static String getParamStr(int i) {
+	char[] b = intToBinary(i, 16).toCharArray();
+	String s = "";
+	s += b[0] + " : QR\n";
+	s += b[1] + "," + b[2] + "," + b[3] + "," + b[4] + " : OPCODE\n";
+	s += b[5] + " : AA\n";
+	s += b[6] + " : TC\n";
+	s += b[7] + " : RD\n";
+	s += b[8] + " : RA\n";
+	s += b[9] + " : UNUSED\n";
+	s += b[10] + " : AD\n";
+	s += b[11] + " : CD\n";
+	s += b[12] + "," + b[13] + "," + b[14] + "," + b[15] + " : RCODE\n";
+	return s;
     }
 
     public static int getShortValue(byte[] t, int i) {
@@ -79,7 +99,8 @@ public class SendUDP {
 	    return res;
     }
 
-    public static int getEndOfString(byte[] t, int i) {
+    public static int getEndOfString(byte[] t) {
+	int i = 12;
 	while (t[i] != 0) {
 	    int c = t[i] & 0xff;
 	    if (c >= 192)
@@ -90,4 +111,13 @@ public class SendUDP {
 	return i+1;
     }
     
+    public static String intToBinary(int i, int totBit) {
+	String s = "";
+	int r = i;
+	while(totBit-- != 0) {
+	    s = (r % 2) + s;
+	    r /= 2;
+	}
+	return s;
+    }
 }

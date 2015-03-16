@@ -1,9 +1,7 @@
-JC = javac                 
-
 all: SendUDP.class
 
 SendUDP.class: SendUDP.java
-	$(JC) $^
+	javac $^
 
 clean:
 	rm -rf *.class *~
