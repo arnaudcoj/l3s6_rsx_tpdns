@@ -13,7 +13,7 @@ import java.lang.String;
 /**
  * Class used to send a message
  */
-public class SendUDP {
+public class TpDNS {
     
     public static void main (String[] args) throws Exception {
 	DatagramSocket socket;

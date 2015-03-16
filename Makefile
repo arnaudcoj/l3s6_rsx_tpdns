@@ -1,6 +1,6 @@
-all: SendUDP.class
+all: TpDNS.class
 
-SendUDP.class: SendUDP.java
+TpDNS.class: TpDNS.java
 	javac $^
 
 clean:
