@@ -50,6 +50,10 @@ public class SendUDP {
 	    if( (i+1) % 16 == 0)
 		System.out.println("");
 	}
+	System.out.println("\n\npaquet reçu char");
+	for(i = 0; i < packetR.getLength(); i++) {
+	    System.out.print((char) msgR[i]);
+	}
 	System.out.println("\n/////DECRYPTAGE/////");
 	//2e partie decryptage
 	i = 0;
