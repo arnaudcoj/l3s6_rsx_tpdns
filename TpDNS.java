@@ -22,7 +22,7 @@ public class TpDNS {
 	InetAddress dst = InetAddress.getByName("172.18.12.9");
 	int port = 53;
 	int i, length;
-	byte[] msgS = {(byte) 0x08, (byte) 0xbb, (byte) 0x01, (byte) 0x00,
+	/*	byte[] msgS = {(byte) 0x08, (byte) 0xbb, (byte) 0x01, (byte) 0x00,
 		       (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x00,
 		       (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
 		       (byte) 0x03, (byte) 0x77, (byte) 0x77, (byte) 0x77,
@@ -31,7 +31,8 @@ public class TpDNS {
 		       (byte) 0x00,
 		       (byte) 0x00, (byte) 0x01,
 		       (byte) 0x00, (byte) 0x01};
-
+	*/
+	byte[] msgS = createRequest("www.lifl.fr");
 	packetS = new DatagramPacket(msgS, msgS.length, dst, port);
 	socket = new DatagramSocket();
 
@@ -39,17 +40,18 @@ public class TpDNS {
 	socket.receive(packetR);
 	byte[] msgR = packetR.getData();
 	length = packetR.getLength();
-	System.out.println("paquet reçu hexa");
-	for(i = 0; i < packetR.getLength(); i++) {
-	    System.out.print("," + getHexStr(msgR[i] & 0xff));
-	    if( (i+1) % 16 == 0)
+	
+	//Q4
+	decryptPacket(msgR, length);
+	i = 0;
+
+	/*	for(byte b : msgS) {
+	    System.out.print(',' + getHexStr(b));
+	    if(++i % 8 == 0)
 		System.out.println("");
 	}
-	System.out.println("\n/////DECRYPTAGE/////");
-	//2e partie decryptage
-	
-	decryptPacket(msgR, length);
-
+		System.out.println("");
+	*/
 	socket.close(); 
     }
 
@@ -57,6 +59,8 @@ public class TpDNS {
 	int i = 0;
 	int j;
 	int offset, nbchar, ip;
+	System.out.println("\n/////DECRYPTAGE/////");
+	//2e partie decryptage
 	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : IDENTIFIANT");
 	System.out.println(getParamStr(getShortValue(msg, i))); // PARAMETRES
 	i += 2;
@@ -186,5 +190,25 @@ public class TpDNS {
 	    r /= 2;
 	}
 	return s;
+    }
+
+    public static byte[] createRequest(String label) {
+	int length = 18 + label.length();
+	int i;
+	byte[] r = new byte[length];
+	String[] labelSplit = label.split("\\."); // \\. = regexp pour le point '.'
+	r[0] = (byte) 0x08;
+	r[1] = (byte) 0xbb;
+	r[2] = r[5] = r[length -1] = r[length - 3] = (byte) 0x01;
+	r[3] = r[4] = r[length -2] = r[length - 4] = r[length - 5] = (byte) 0;
+	for(i = 6; i < 12; i++)
+	    r[i] = (byte) 0;
+	for(String str : labelSplit) {
+	    System.out.println(str);
+	    r[i++] = (byte) (str.length() & 0xff);
+	    for(char c : str.toCharArray())
+		r[i++] = (byte) c;
+	}
+	return r;
     }
 }
