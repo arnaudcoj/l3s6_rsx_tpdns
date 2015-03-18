@@ -135,7 +135,7 @@ public class TpDNS {
 	byte[] msg = packet.getData();
 	int length = packet.getLength();
 	int i = 0;
-	int j, offset, nbchar, ip, taillechaine, nbRep, nbAut, nbAdd;
+	int j, offset, nbchar, ip, finChaine, nbRep, nbAut, nbAdd;
 
 	System.out.println("\n/////DECRYPTAGE/////");
 	
@@ -160,9 +160,9 @@ public class TpDNS {
 	i += 2;
 
 	// IMPRESSION NOM
-	taillechaine = getEndOfString(msg, 12);
+	finChaine = getEndOfString(msg, 12);
 	System.out.print("URL : ");
-	for(; i < taillechaine; i++)
+	for(; i < finChaine; i++)
 	    System.out.print((char) msg[i]);
 
 	System.out.println("\nTYPE (HOST ADDRESS) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
