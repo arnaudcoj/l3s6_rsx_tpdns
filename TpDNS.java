@@ -88,7 +88,7 @@ public class TpDNS {
 	ip = (msgR[i+10] & 0xff)*16777216 + (msgR[i+11] & 0xff)*65536 + (msgR[i+12] & 0xff)*256 + (msgR[i+13] & 0xff);
 
 	// AFFICHAGE EVENTUEL DE L'IP SOUS FORME LISIBLE POUR VERIFICATION
-	System.out.println( "getIP : Adresse obtenue : " + (msgR[i+10] & 0xff) + "." + (msgR[i+11] & 0xff) + "." + (msgR[i+12] & 0xff) + "." + (msgR[i+13] & 0xff));
+	//System.out.println( "getIP : Adresse obtenue : " + (msgR[i+10] & 0xff) + "." + (msgR[i+11] & 0xff) + "." + (msgR[i+12] & 0xff) + "." + (msgR[i+13] & 0xff));
 
 	// FERMETURE DU SOCKET
 	socket.close();
@@ -139,37 +139,35 @@ public class TpDNS {
 
 	System.out.println("\n/////DECRYPTAGE/////");
 	
-	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : IDENTIFIANT");
+	System.out.println("IDENTIFIANT : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 
 	printParamStr(getShortValue(msg, i)); // IMPRESSION PARAMETRES
 	i += 2;
 	
-	System.out.println(getShortValue(msg, i) + " : QUESTION");
+	System.out.println("QUESTION : " + getShortValue(msg, i));
 	i += 2;
 
-	System.out.println(getShortValue(msg, i) + " : REPONSE");
+	System.out.println("REPONSE : " + getShortValue(msg, i));
 	i += 2;
 
-	System.out.println(getShortValue(msg, i) + " : AUTORITE");
+	System.out.println("AUTORITE : " + getShortValue(msg, i));
 	i += 2;
 
-	System.out.println(getShortValue(msg, i) + " : INFOS COMPLEMENTAIRES");
+	System.out.println("INFOS COMPLEMENTAIRES : " + getShortValue(msg, i));
 	i += 2;
 
 	// IMPRESSION NOM
 	taillechaine = getEndOfString(msg, 12);
+	System.out.print("URL : ");
 	for(; i < taillechaine; i++)
 	    System.out.print((char) msg[i]);
-	System.out.println(" : URL");
 
-	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : TYPE (HOST ADDRESS)");
-	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : CLASS (INTERNET)\n");
+	System.out.println("\nTYPE (HOST ADDRESS) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
+	System.out.println("CLASS (INTERNET) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 
 	// IMPRESSION REPONSES, AUTORITE, INFOS COMPLEMENTAIRES
-	System.out.println("REPONSE");
-	i = printChampStr(msg, i); // Affiche réponse 1
-	i = printChampStr(msg, i); // Affiche réponse 2 (avec IP)
-	ip = i - 4;
+	System.out.println("//REPONSES//");
+
 	while(i < length) // on commence à partir de i
 	    i = printChampStr(msg, i); // on récupère l'indice où on s'est arreté après avoir lu un champ pour recommencer à partir de cet indice
 
@@ -193,30 +191,30 @@ public class TpDNS {
 	int i = offset;
 	int length, type;
 	//OFFSET
-	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i]) + " : OFFSET de " + msg[i]);
+	System.out.println("OFFSET : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i]) + " = " + (msg[i] & 0xff));
 	//NOM
+	System.out.print("NOM : ");
 	for(int j = msg[i++] & 0xff; msg[j] != 0; j++)
 	    System.out.print((char) msg[j]);
-	System.out.println(" : NOM");
 	//TYPE
 	type = getShortValue(msg, i);
-	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : TYPE");
+	System.out.println("\nTYPE : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 	//CLASS
-	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : CLASS");
+	System.out.println("CLASS : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 	//TTL
-	System.out.println(getIntValue(msg, i) + " : TTL");
+	System.out.println("TTL : " + getIntValue(msg, i));
 	i += 4;
 
 	//RDLENGTH
 	length = getShortValue(msg, i);
-	System.out.println(length + " : LENGTH");
+	System.out.println("LENGTH : " + length);
 	i += 2;
 	
 	//RDDATA
 	for(int j = 0; j < length; j++)
-	    if(type == 1)
+	    if(type == 1) // AFFICHAGE ADRESSE IP
 		System.out.print((msg[i+j] & 0xFF) + ".");
-	    else
+	    else // AUTRE AFFICHAGE 
 		System.out.print((char) msg[i+j]); // on affiche length char
 	i += length; // on ajoute à i les octets parcourus
 	
@@ -232,20 +230,21 @@ public class TpDNS {
     public static void printParamStr(int i) {
 	char[] b = intToBinary(i, 16).toCharArray();
 	int j;
-	System.out.println(b[0] + " : QR");
+	System.out.print("    QR : " + b[0]);
 	for(j = 1; j < 5; j++)
 	    System.out.print(b[j]);
-	System.out.println(" : OPCODE");
-	System.out.println(b[5] + " : AA");
-	System.out.println(b[6] + " : TC");
-	System.out.println(b[7] + " : RD");
-	System.out.println(b[8] + " : RA");
-	System.out.println(b[9] + " : UNUSED");
-	System.out.println(b[10] + " : AD");
-	System.out.println(b[11] + " : CD");
+	System.out.println("\n    OPCODE : ");
+	System.out.println("    AA : " + b[5]);
+	System.out.println("    TC :" + b[6]);
+	System.out.println("    RD : " + b[7]);
+	System.out.println("    RA : " + b[8]);
+	System.out.println("    UNUSED : " + b[9]);
+	System.out.println("    AD :" + b[10]);
+	System.out.println("    CD :" + b[11]);
+	System.out.print("    RCODE :");
 	for(j = 12; j < 16; j++)
 	    System.out.print(b[j]);
-	System.out.println(" : RCODE");
+	System.out.println("");
     }
 
     /**
