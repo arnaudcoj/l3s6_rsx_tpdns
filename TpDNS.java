@@ -135,7 +135,7 @@ public class TpDNS {
 	byte[] msg = packet.getData();
 	int length = packet.getLength();
 	int i = 0;
-	int j, offset, nbchar, ip, taillechaine;
+	int j, offset, nbchar, ip, taillechaine, nbRep, nbAut, nbAdd;
 
 	System.out.println("\n/////DECRYPTAGE/////");
 	
@@ -143,17 +143,20 @@ public class TpDNS {
 
 	printParamStr(getShortValue(msg, i)); // IMPRESSION PARAMETRES
 	i += 2;
-	
+
 	System.out.println("QUESTION : " + getShortValue(msg, i));
 	i += 2;
 
-	System.out.println("REPONSE : " + getShortValue(msg, i));
+	nbRep = getShortValue(msg, i);
+	System.out.println("REPONSE : " + nbRep);
 	i += 2;
 
-	System.out.println("AUTORITE : " + getShortValue(msg, i));
+	nbAut = getShortValue(msg, i);
+	System.out.println("AUTORITE : " + nbAut);
 	i += 2;
 
-	System.out.println("INFOS COMPLEMENTAIRES : " + getShortValue(msg, i));
+	nbAdd = getShortValue(msg, i);
+	System.out.println("INFOS COMPLEMENTAIRES : " + nbAdd);
 	i += 2;
 
 	// IMPRESSION NOM
@@ -166,10 +169,21 @@ public class TpDNS {
 	System.out.println("CLASS (INTERNET) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 
 	// IMPRESSION REPONSES, AUTORITE, INFOS COMPLEMENTAIRES
-	System.out.println("//REPONSES//");
+	System.out.println("\n//REPONSES//");
 
-	while(i < length) // on commence à partir de i
-	    i = printChampStr(msg, i); // on récupère l'indice où on s'est arreté après avoir lu un champ pour recommencer à partir de cet indice
+	System.out.println("\n" + nbRep + " Réponses");
+	for(j = 0; j < nbRep; j++) // on commence à partir de i
+	    i = printChampStr(msg, i);
+
+	System.out.println("\n" + nbAut + " Autorités");
+	for(j = 0; j < nbAut; j++) // on commence à partir de i
+	    i = printChampStr(msg, i);
+	
+	System.out.println("\n" + nbAdd + " Informations Additionelles");
+	for(j = 0; j < nbAdd; j++) // on commence à partir de i
+	    i = printChampStr(msg, i);
+
+	// on récupère l'indice où on s'est arreté après avoir lu un champ pour recommencer à partir de cet indice
 
 	// IMPRESSION ADRESSE IP
 	i = getEndOfString(msg, 12) + 6; // on va jusqu'au premier champ
