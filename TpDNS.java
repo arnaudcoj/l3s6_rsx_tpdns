@@ -18,9 +18,9 @@ public class TpDNS {
 	String label;
 	
 	/*Serveur de Google, pour tester chez soi*/
-	InetAddress dst = InetAddress.getByName("8.8.8.8");
+	//InetAddress dst = InetAddress.getByName("8.8.8.8");
 	/*Serveur de lifl, pour tester à l'université*/
-	//	InetAddress dst = InetAddress.getByName("172.18.12.9");
+	InetAddress dst = InetAddress.getByName("172.18.12.9");
 
 	//usage : java TpDNS [adresse]
 	if(args.length >= 1) 
