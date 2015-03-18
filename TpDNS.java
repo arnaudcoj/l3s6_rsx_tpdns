@@ -15,11 +15,16 @@ import java.lang.String;
 public class TpDNS {
     
     public static void main (String[] args) throws Exception {
+	String label;
+	if(args.length >= 1)
+	    label = args[0];
+	else
+	    label = "www.lifl.fr";
 	// Q4 (IMPRESSION ET ANALYSE DU PAQUET + AFFICHAGE DE L'IP)
-	analysePacket("www.lifl.fr");
+		analysePacket(label);
 	
 	// Q5 (RENVOI DE L'ADRESSE IP SOUS FORME D'INT
-	System.out.println("\nAdresse IP sous forme d'int : " + getIP("www.lifl.fr"));
+	System.out.println("\nAdresse IP sous forme d'int : " + getIP(label));
     }
 
     /**
@@ -32,11 +37,11 @@ public class TpDNS {
 	DatagramSocket socket;
 	DatagramPacket packetS;
 	DatagramPacket packetR = new DatagramPacket(new byte[512], 512);
-	InetAddress dst = InetAddress.getByName("8.8.8.8");
-	//InetAddress dst = InetAddress.getByName("172.18.12.9"); FAC
+	//InetAddress dst = InetAddress.getByName("8.8.8.8"); PAS FAC
+	InetAddress dst = InetAddress.getByName("172.18.12.9");
 	int port = 53;
 	int i, length, ip;
-	byte[] msgS = createRequest("www.lifl.fr");
+	byte[] msgS = createRequest(label);
 	byte[] msgR;
 	packetS = new DatagramPacket(msgS, msgS.length, dst, port);
 	socket = new DatagramSocket();
@@ -62,11 +67,11 @@ public class TpDNS {
 	DatagramSocket socket;
 	DatagramPacket packetS;
 	DatagramPacket packetR = new DatagramPacket(new byte[512], 512);
-	InetAddress dst = InetAddress.getByName("8.8.8.8");
-	//InetAddress dst = InetAddress.getByName("172.18.12.9"); FAC
+	//	InetAddress dst = InetAddress.getByName("8.8.8.8"); PAS FAC
+	InetAddress dst = InetAddress.getByName("172.18.12.9");
 	int port = 53;
 	int i, length, ip;
-	byte[] msgS = createRequest("www.lifl.fr");
+	byte[] msgS = createRequest(label);
 	byte[] msgR;
 	packetS = new DatagramPacket(msgS, msgS.length, dst, port);
 	socket = new DatagramSocket();
@@ -75,14 +80,15 @@ public class TpDNS {
 	msgR = packetR.getData();
 
 	// TRAITEMENT DU PAQUET
-	i = getEndOfString(msgR, 12) + 14; // on va jusqu'au premier champ
-	i += getShortValue(msgR, i) + 14; // on va jusqu'au deuxième champ
+	i = getEndOfString(msgR, 12) + 6; // on va jusqu'au premier champ
+	while(getShortValue(msgR, i) != 1)
+	    i += getShortValue(msgR, i+8) + 12; // on va au premier champ de type 1 (contenant une adresse IP)
 
 	// CODAGE DES 4 OCTETS DE L'IP DANS UN SEUL INT (qui est codé sur 4 octets)
-	ip = (msgR[i] & 0xff)*16777216 + (msgR[i+1] & 0xff)*65536 + (msgR[i+2] & 0xff)*256 + (msgR[i+3] & 0xff);
+	ip = (msgR[i+10] & 0xff)*16777216 + (msgR[i+11] & 0xff)*65536 + (msgR[i+12] & 0xff)*256 + (msgR[i+13] & 0xff);
 
 	// AFFICHAGE EVENTUEL DE L'IP SOUS FORME LISIBLE POUR VERIFICATION
-	//System.out.println( "getIP : Adresse obtenue : " + (msgR[i] & 0xff) + "." + (msgR[i+1] & 0xff) + "." + (msgR[i+2] & 0xff) + "." + (msgR[i+3] & 0xff));
+	System.out.println( "getIP : Adresse obtenue : " + (msgR[i+10] & 0xff) + "." + (msgR[i+11] & 0xff) + "." + (msgR[i+12] & 0xff) + "." + (msgR[i+13] & 0xff));
 
 	// FERMETURE DU SOCKET
 	socket.close();
@@ -130,6 +136,7 @@ public class TpDNS {
 	int length = packet.getLength();
 	int i = 0;
 	int j, offset, nbchar, ip, taillechaine;
+
 	System.out.println("\n/////DECRYPTAGE/////");
 	
 	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : IDENTIFIANT");
@@ -167,11 +174,11 @@ public class TpDNS {
 	    i = printChampStr(msg, i); // on récupère l'indice où on s'est arreté après avoir lu un champ pour recommencer à partir de cet indice
 
 	// IMPRESSION ADRESSE IP
-	
-	System.out.print("L'adresse IP est : ");
-	for(int k = 0; k < 3; k++)
-	    System.out.print((msg[ip+k] & 0xFF) + ".");
-	System.out.println(msg[ip+3] & 0xFF);
+	i = getEndOfString(msg, 12) + 6; // on va jusqu'au premier champ
+	while(getShortValue(msg, i) != 1)
+	    i += getShortValue(msg, i+8) + 12; // on va au premier champ de type 1 (contenant une adresse IP)
+
+	System.out.println( "L'adresse IP est : " + (msg[i+10] & 0xff) + "." + (msg[i+11] & 0xff) + "." + (msg[i+12] & 0xff) + "." + (msg[i+13] & 0xff));
     }
 
     /**
@@ -188,7 +195,7 @@ public class TpDNS {
 	//OFFSET
 	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i]) + " : OFFSET de " + msg[i]);
 	//NOM
-	for(int j = msg[i++]; msg[j] != 0; j++)
+	for(int j = msg[i++] & 0xff; msg[j] != 0; j++)
 	    System.out.print((char) msg[j]);
 	System.out.println(" : NOM");
 	//TYPE
@@ -197,7 +204,7 @@ public class TpDNS {
 	//CLASS
 	System.out.println(getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]) + " : CLASS");
 	//TTL
-	System.out.println(getIntValue(msg, i) + " TTL");
+	System.out.println(getIntValue(msg, i) + " : TTL");
 	i += 4;
 
 	//RDLENGTH
