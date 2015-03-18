@@ -16,15 +16,23 @@ public class TpDNS {
     
     public static void main (String[] args) throws Exception {
 	String label;
-	if(args.length >= 1)
-	    label = args[0];
+	
+	/*Serveur de Google, pour tester chez soi*/
+	InetAddress dst = InetAddress.getByName("8.8.8.8");
+	/*Serveur de lifl, pour tester à l'université*/
+	//	InetAddress dst = InetAddress.getByName("172.18.12.9");
+
+	//usage : java TpDNS [adresse]
+	if(args.length >= 1) 
+	    label = args[0]; 
 	else
-	    label = "www.lifl.fr";
+	    label = "www.lifl.fr"; // adresse par défaut
+	
 	// Q4 (IMPRESSION ET ANALYSE DU PAQUET + AFFICHAGE DE L'IP)
-		analysePacket(label);
+	analysePacket(label, dst);
 	
 	// Q5 (RENVOI DE L'ADRESSE IP SOUS FORME D'INT
-	System.out.println("\nAdresse IP sous forme d'int : " + getIP(label));
+	System.out.println("\n\nAdresse IP sous forme d'int : " + getIP(label, dst));
     }
 
     /**
@@ -32,13 +40,11 @@ public class TpDNS {
      * (Question 4)
      * @param label l'URL dont on veut connaître les informations
      */ 
-    public static void analysePacket(String label) throws Exception {
+    public static void analysePacket(String label, InetAddress dst) throws Exception {
 	// ENVOI DE LA REQUETE
 	DatagramSocket socket;
 	DatagramPacket packetS;
 	DatagramPacket packetR = new DatagramPacket(new byte[512], 512);
-	//InetAddress dst = InetAddress.getByName("8.8.8.8"); PAS FAC
-	InetAddress dst = InetAddress.getByName("172.18.12.9");
 	int port = 53;
 	int i, length, ip;
 	byte[] msgS = createRequest(label);
@@ -62,13 +68,11 @@ public class TpDNS {
      * @param label l'URL dont on veut connaître les informations
      * @return l'adresse IP correspondant à l'URL, sous forme d'entier
      */
-    public static int getIP(String label) throws Exception {
+    public static int getIP(String label, InetAddress dst) throws Exception {
 	// ENVOI ET RECEPTION DU PAQUET
 	DatagramSocket socket;
 	DatagramPacket packetS;
 	DatagramPacket packetR = new DatagramPacket(new byte[512], 512);
-	//	InetAddress dst = InetAddress.getByName("8.8.8.8"); PAS FAC
-	InetAddress dst = InetAddress.getByName("172.18.12.9");
 	int port = 53;
 	int i, length, ip;
 	byte[] msgS = createRequest(label);
@@ -137,8 +141,6 @@ public class TpDNS {
 	int i = 0;
 	int j, offset, nbchar, ip, finChaine, nbRep, nbAut, nbAdd;
 
-	System.out.println("\n/////DECRYPTAGE/////");
-	
 	System.out.println("IDENTIFIANT : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 
 	printParamStr(getShortValue(msg, i)); // IMPRESSION PARAMETRES
@@ -169,7 +171,6 @@ public class TpDNS {
 	System.out.println("CLASS (INTERNET) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 
 	// IMPRESSION REPONSES, AUTORITE, INFOS COMPLEMENTAIRES
-	System.out.println("\n//REPONSES//");
 
 	System.out.println("\n" + nbRep + " Réponses");
 	for(j = 0; j < nbRep; j++) // on commence à partir de i
@@ -190,11 +191,11 @@ public class TpDNS {
 	while(getShortValue(msg, i) != 1)
 	    i += getShortValue(msg, i+8) + 12; // on va au premier champ de type 1 (contenant une adresse IP)
 
-	System.out.println( "L'adresse IP est : " + (msg[i+10] & 0xff) + "." + (msg[i+11] & 0xff) + "." + (msg[i+12] & 0xff) + "." + (msg[i+13] & 0xff));
+	System.out.println("\nL'adresse IP est : " + (msg[i+10] & 0xff) + "." + (msg[i+11] & 0xff) + "." + (msg[i+12] & 0xff) + "." + (msg[i+13] & 0xff));
     }
 
     /**
-     * Imprime un champ de réponse d'un paquet
+     * Imprime un champ réponse/autorité/additionnel d'un paquet
      * (Pour la question 4)
      * @param msg le tableau d'octets correspondant au paquet reçu
      * @param offset l'indice de début du champ
@@ -225,11 +226,18 @@ public class TpDNS {
 	i += 2;
 	
 	//RDDATA
-	for(int j = 0; j < length; j++)
-	    if(type == 1) // AFFICHAGE ADRESSE IP
-		System.out.print((msg[i+j] & 0xFF) + ".");
-	    else // AUTRE AFFICHAGE 
-		System.out.print((char) msg[i+j]); // on affiche length char
+	int j = 0;
+	while(j < length)
+	    if(type == 1) { // AFFICHAGE ADRESSE IP		    
+		System.out.print(msg[i+j] & 0xff);
+		if(j != length -1)
+		    System.out.print(".");
+		j++;
+	    } else { // AUTRE AFFICHAGE
+		System.out.print((char) (msg[i+j] & 0xff));
+		j++;
+	    }
+		
 	i += length; // on ajoute à i les octets parcourus
 	
 	System.out.println("\n");
