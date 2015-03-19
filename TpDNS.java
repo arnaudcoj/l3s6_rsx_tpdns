@@ -32,7 +32,7 @@ public class TpDNS {
 	analysePacket(label, dst);
 	
 	// Q5 (RENVOI DE L'ADRESSE IP SOUS FORME D'INT
-	System.out.println("\n\nAdresse IP sous forme d'int : " + getIP(label, dst));
+	//	System.out.println("\n\nAdresse IP sous forme d'int : " + getIP(label, dst));
     }
 
     /**
@@ -52,6 +52,14 @@ public class TpDNS {
 	socket = new DatagramSocket();
 	socket.send(packetS);
 	socket.receive(packetR);
+	byte[] msgR = packetR.getData();
+
+	for(int i = 0; i < packetR.getLength(); i++) {
+	    System.out.print("," + getHexStr(msgR[i]));
+	    if(i % 16 == 0)
+		System.out.println("");
+	}
+	System.out.println("");
 
 	// IMPRESSION ET DECRYPTAGE DU PAQUET
 	printPacket(packetR);
@@ -138,7 +146,7 @@ public class TpDNS {
 	byte[] msg = packet.getData();
 	int length = packet.getLength();
 	int i = 0;
-	int j, offset, nbchar, ip, finChaine, nbRep, nbAut, nbAdd;
+	int j, offset, nbchar, ip, finChaine, nbRep, nbAut, nbAdd, type;
 
 	System.out.println("IDENTIFIANT : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 
@@ -163,8 +171,10 @@ public class TpDNS {
 	// IMPRESSION NOM
 	finChaine = getEndOfString(msg, 12);
 	System.out.print("URL : ");
-	for(; i < finChaine; i++)
-	    System.out.print((char) msg[i]);
+	
+	i = printPacketString(msg, i);
+	    //for(; i < finChaine; i++)
+	    // System.out.print((char) msg[i]);
 
 	System.out.println("\nTYPE (HOST ADDRESS) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 	System.out.println("CLASS (INTERNET) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
@@ -186,11 +196,19 @@ public class TpDNS {
 	// on récupère l'indice où on s'est arreté après avoir lu un champ pour recommencer à partir de cet indice
 
 	// IMPRESSION ADRESSE IP
-	i = getEndOfString(msg, 12) + 6; // on va jusqu'au premier champ
-	while(getShortValue(msg, i) != 1)
-	    i += getShortValue(msg, i+8) + 12; // on va au premier champ de type 1 (contenant une adresse IP)
-
-	System.out.println("\nL'adresse IP est : " + (msg[i+10] & 0xff) + "." + (msg[i+11] & 0xff) + "." + (msg[i+12] & 0xff) + "." + (msg[i+13] & 0xff));
+	    i = getEndOfString(msg, 12) + 6; // on va jusqu'au premier champ
+	    while((type = getShortValue(msg, i)) != 1 && type != 6)
+		i += getShortValue(msg, i+8) + 12; // on va au premier champ de type 1 (contenant une adresse IP)
+	    if(type == 1)
+		System.out.println("\nL'adresse IP est : " + (msg[i+10] & 0xff) + "." + (msg[i+11] & 0xff) + "." + (msg[i+12] & 0xff) + "." + (msg[i+13] & 0xff));
+	    else
+		if(type == 6) {
+		    System.out.print("\nLe \"truc\" est :  " );
+		    for(int a = 0; a < getShortValue(msg,(i+8)); a++)
+			System.out.print((char) (msg[i+10+a] & 0xff));
+		} else
+		    System.out.println("\nERREUR");
+	    System.out.println("");
     }
 
     /**
@@ -208,8 +226,11 @@ public class TpDNS {
 	System.out.println("OFFSET : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i]) + " = " + (msg[i] & 0xff));
 	//NOM
 	System.out.print("NOM : ");
-	for(int j = msg[i++] & 0xff; msg[j] != 0; j++)
-	    System.out.print((char) msg[j]);
+
+	printPacketString(msg, msg[i++]);
+	//	for(int j = msg[i++] & 0xff; msg[j] != 0; j++)
+	//	  System.out.print((char) msg[j]);
+
 	//TYPE
 	type = getShortValue(msg, i);
 	System.out.println("\nTYPE : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
@@ -233,8 +254,9 @@ public class TpDNS {
 		    System.out.print(".");
 		j++;
 	    } else { // AUTRE AFFICHAGE
-		System.out.print((char) (msg[i+j] & 0xff));
-		j++;
+		//System.out.print((char) (msg[i+j] & 0xff));
+		//j++;
+		j = printPacketString(msg, i + j);
 	    }
 		
 	i += length; // on ajoute à i les octets parcourus
@@ -337,4 +359,27 @@ public class TpDNS {
 	return s;
     }
 
+    public static int printPacketString(byte[] msg, int offset) {
+	int length = msg[offset];
+	int i = 0;
+	switch(length) {
+	case 0:
+	    return offset + 1;
+	case 0xc0 :
+	    System.out.print('.');
+	    printPacketString(msg, msg[offset+1]);
+	    return offset + 2;
+	default :
+	    System.out.print('.');
+
+	    while(i < length) {
+		System.out.print((char) (msg[offset + i + 1] & 0xff));
+		i++;
+	    }
+	
+	     return printPacketString(msg, offset + i + 1);
+
+	}
+    }
+    
 }
