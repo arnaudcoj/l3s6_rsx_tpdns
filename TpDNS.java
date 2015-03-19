@@ -18,9 +18,9 @@ public class TpDNS {
 	String label;
 	
 	/*Serveur de Google, pour tester chez soi*/
-	//InetAddress dst = InetAddress.getByName("8.8.8.8");
+	InetAddress dst = InetAddress.getByName("8.8.8.8");
 	/*Serveur de lifl, pour tester à l'université*/
-	InetAddress dst = InetAddress.getByName("172.18.12.9");
+	//InetAddress dst = InetAddress.getByName("172.18.12.9");
 
 	//usage : java TpDNS [adresse]
 	if(args.length >= 1) 
@@ -39,6 +39,7 @@ public class TpDNS {
      * Envoie une requête DNS à propos d'une URL et imprime le contenu du paquet reçu ainsi que l'adresse IP correspondante
      * (Question 4)
      * @param label l'URL dont on veut connaître les informations
+     * @param dst l'adresse à laquelle on envoie la requête
      */ 
     public static void analysePacket(String label, InetAddress dst) throws Exception {
 	// ENVOI DE LA REQUETE
@@ -46,9 +47,7 @@ public class TpDNS {
 	DatagramPacket packetS;
 	DatagramPacket packetR = new DatagramPacket(new byte[512], 512);
 	int port = 53;
-	int i, length, ip;
 	byte[] msgS = createRequest(label);
-	byte[] msgR;
 	packetS = new DatagramPacket(msgS, msgS.length, dst, port);
 	socket = new DatagramSocket();
 	socket.send(packetS);
@@ -66,6 +65,7 @@ public class TpDNS {
      * Envoie une requête DNS à propos d'une URL et retourne son adresse IP (codée sous forme d'entier)
      * (Question 5)
      * @param label l'URL dont on veut connaître les informations
+     * @param dst l'adresse à laquelle on envoie la requête
      * @return l'adresse IP correspondant à l'URL, sous forme d'entier
      */
     public static int getIP(String label, InetAddress dst) throws Exception {
@@ -74,14 +74,13 @@ public class TpDNS {
 	DatagramPacket packetS;
 	DatagramPacket packetR = new DatagramPacket(new byte[512], 512);
 	int port = 53;
-	int i, length, ip;
+	int i, ip;
 	byte[] msgS = createRequest(label);
-	byte[] msgR;
 	packetS = new DatagramPacket(msgS, msgS.length, dst, port);
 	socket = new DatagramSocket();
 	socket.send(packetS);
 	socket.receive(packetR);
-	msgR = packetR.getData();
+	byte[] msgR = packetR.getData();
 
 	// TRAITEMENT DU PAQUET
 	i = getEndOfString(msgR, 12) + 6; // on va jusqu'au premier champ
@@ -252,11 +251,11 @@ public class TpDNS {
     public static void printParamStr(int i) {
 	char[] b = intToBinary(i, 16).toCharArray();
 	int j;
-	System.out.print("    QR : " + b[0]);
+	System.out.println("    QR : " + b[0]);
+	System.out.print("    OPCODE : ");
 	for(j = 1; j < 5; j++)
 	    System.out.print(b[j]);
-	System.out.println("\n    OPCODE : ");
-	System.out.println("    AA : " + b[5]);
+	System.out.println("\n    AA : " + b[5]);
 	System.out.println("    TC :" + b[6]);
 	System.out.println("    RD : " + b[7]);
 	System.out.println("    RA : " + b[8]);
