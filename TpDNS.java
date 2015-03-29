@@ -53,13 +53,6 @@ public class TpDNS {
 	socket.receive(packetR);
 	byte[] msgR = packetR.getData();
 
-	for(int i = 0; i < packetR.getLength(); i++) {
-	    System.out.print("," + getHexStr(msgR[i]));
-	    if(i % 16 == 0)
-		System.out.println("");
-	}
-	System.out.println("");
-
 	// IMPRESSION ET DECRYPTAGE DU PAQUET
 	printPacket(packetR);
 
@@ -171,10 +164,9 @@ public class TpDNS {
 	finChaine = getEndOfString(msg, i);
 	System.out.print("URL : ");
 	
-	i = printPacketString(msg, i) + 1;
-	    //for(; i < finChaine; i++)
-	    // System.out.print((char) msg[i]);
-
+	printPacketString(msg, i);
+	i = finChaine;
+	
 	System.out.println("\nTYPE (HOST ADDRESS) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 	System.out.println("CLASS (INTERNET) : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
 
@@ -227,7 +219,9 @@ public class TpDNS {
 	//NOM
 	System.out.print("NOM : ");
 
-	i = printPacketString(msg, i);
+	printPacketString(msg, i);
+
+	i += 2;
 	
 	//TYPE
 	type = getShortValue(msg, i);
@@ -363,7 +357,7 @@ public class TpDNS {
     public static int printPacketType6(byte[] msg, int offset, int rdLength) {
 	int i = offset;
 	int start = msg[i] & 0xff;
-	while(i < offset + rdLength - 16) {
+	while(i < offset + rdLength - 20) {
 	    start = msg[i] & 0xff;
 	    switch(start) {
 	    case 0 :
@@ -378,6 +372,9 @@ public class TpDNS {
 		i = printOneSequence(msg, i);
 	    }
 	}
+
+	System.out.print(" ");
+	
 	for(i = offset + rdLength - 16; i < offset + rdLength; i += 4)
 	    System.out.print(getIntValue(msg, i) + " ");
 	return i;
