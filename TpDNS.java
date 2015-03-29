@@ -16,11 +16,10 @@ public class TpDNS {
     
     public static void main (String[] args) throws Exception {
 	String label;
-	
 	/*Serveur de Google, pour tester chez soi*/
-	//InetAddress dst = InetAddress.getByName("8.8.8.8");
+	InetAddress dst = InetAddress.getByName("8.8.8.8");
 	/*Serveur de lifl, pour tester à l'université*/
-	InetAddress dst = InetAddress.getByName("172.18.12.9");
+	//	InetAddress dst = InetAddress.getByName("172.18.12.9");
 
 	//usage : java TpDNS [adresse]
 	if(args.length >= 1) 
@@ -169,10 +168,10 @@ public class TpDNS {
 	i += 2;
 
 	// IMPRESSION NOM
-	finChaine = getEndOfString(msg, 12);
+	finChaine = getEndOfString(msg, i);
 	System.out.print("URL : ");
 	
-	i = printPacketString(msg, i);
+	i = printPacketString(msg, i) + 1;
 	    //for(; i < finChaine; i++)
 	    // System.out.print((char) msg[i]);
 
@@ -203,9 +202,10 @@ public class TpDNS {
 		System.out.println("\nL'adresse IP est : " + (msg[i+10] & 0xff) + "." + (msg[i+11] & 0xff) + "." + (msg[i+12] & 0xff) + "." + (msg[i+13] & 0xff));
 	    else
 		if(type == 6) {
-		    System.out.print("\nLe \"truc\" est :  " );
-		    for(int a = 0; a < getShortValue(msg,(i+8)); a++)
-			System.out.print((char) (msg[i+10+a] & 0xff));
+		    System.out.print("\nLe Serveur Maitre du Domaine est :  " );
+		    i = printPacketType6(msg, i + 10, getShortValue(msg, i + 8));
+		    /*for(int a = 0; a < getShortValue(msg,(i+8)); a++)
+		      System.out.print((char) (msg[i+10+a] & 0xff));*/
 		} else
 		    System.out.println("\nERREUR");
 	    System.out.println("");
@@ -221,16 +221,14 @@ public class TpDNS {
     public static int printChampStr(byte[] msg, int offset) {
 	String s = "";
 	int i = offset;
-	int length, type;
+	int rdLength, type;
 	//OFFSET
-	System.out.println("OFFSET : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i]) + " = " + (msg[i] & 0xff));
+	System.out.println("OFFSET : " + getHexStr(msg[i]) + ',' + getHexStr(msg[i + 1]) + " = " + (msg[i+1] & 0xff));
 	//NOM
 	System.out.print("NOM : ");
 
-	printPacketString(msg, msg[i++]);
-	//	for(int j = msg[i++] & 0xff; msg[j] != 0; j++)
-	//	  System.out.print((char) msg[j]);
-
+	i = printPacketString(msg, i);
+	
 	//TYPE
 	type = getShortValue(msg, i);
 	System.out.println("\nTYPE : " + getHexStr(msg[i++]) + ',' + getHexStr(msg[i++]));
@@ -241,25 +239,28 @@ public class TpDNS {
 	i += 4;
 
 	//RDLENGTH
-	length = getShortValue(msg, i);
-	System.out.println("LENGTH : " + length);
+	rdLength = getShortValue(msg, i);
+	System.out.println("LENGTH : " + rdLength);
 	i += 2;
 	
 	//RDDATA
 	int j = 0;
-	while(j < length)
-	    if(type == 1) { // AFFICHAGE ADRESSE IP		    
+	switch(type) {
+	case 1: // AFFICHAGE ADRESSE IP
+	    while(j < rdLength) {
 		System.out.print(msg[i+j] & 0xff);
-		if(j != length -1)
+		if(j != rdLength -1)
 		    System.out.print(".");
 		j++;
-	    } else { // AUTRE AFFICHAGE
-		//System.out.print((char) (msg[i+j] & 0xff));
-		//j++;
-		j = printPacketString(msg, i + j);
 	    }
-		
-	i += length; // on ajoute à i les octets parcourus
+	    break;
+	case 6: // AFFICHAGE SERVEUR MAITRE DU DOMAINE
+	    printPacketType6(msg, i + j, rdLength);
+	    break;
+	default:
+	    printPacketRDData(msg, i + j, rdLength);
+	}    
+	i += rdLength; // on ajoute à i les octets parcourus
 	
 	System.out.println("\n");
 	return i;
@@ -359,27 +360,78 @@ public class TpDNS {
 	return s;
     }
 
-    public static int printPacketString(byte[] msg, int offset) {
-	int length = msg[offset];
-	int i = 0;
-	switch(length) {
-	case 0:
-	    return offset + 1;
-	case 0xc0 :
-	    System.out.print('.');
-	    printPacketString(msg, msg[offset+1]);
-	    return offset + 2;
-	default :
-	    System.out.print('.');
-
-	    while(i < length) {
-		System.out.print((char) (msg[offset + i + 1] & 0xff));
-		i++;
+    public static int printPacketType6(byte[] msg, int offset, int rdLength) {
+	int i = offset;
+	int start = msg[i] & 0xff;
+	while(i < offset + rdLength - 16) {
+	    start = msg[i] & 0xff;
+	    switch(start) {
+	    case 0 :
+		i += 1;
+		break;
+	    case 0xc0 :
+		if(msg[printPacketString(msg, (msg[i+1] & 0xff))] == 0)
+		    System.out.print(" ");
+		i += 2;
+		break;
+	    default :
+		i = printOneSequence(msg, i);
 	    }
-	
-	     return printPacketString(msg, offset + i + 1);
-
 	}
-    }
+	for(i = offset + rdLength - 16; i < offset + rdLength; i += 4)
+	    System.out.print(getIntValue(msg, i) + " ");
+	return i;
+    }	
     
+    public static int printPacketRDData(byte[] msg, int offset, int rdLength) {
+	int i = offset;
+	int start = msg[i] & 0xff;
+	while(i < offset + rdLength) {
+	    start = msg[i] & 0xff;
+	    switch(start) {
+	    case 0 :
+		i += 1;
+		break;
+	    case 0xc0 :
+		printPacketString(msg, (msg[i+1] & 0xff));
+		i += 2;
+		break;
+	    default :
+		i = printOneSequence(msg, i);
+	    }
+	}
+	return i;
+    }	
+    
+    public static int printPacketString(byte[] msg, int offset) {
+	int i = offset;
+	int start = msg[i] & 0xff;
+       	while((msg[i] & 0xff) != 0) {
+	    start = msg[i] & 0xff;
+	    switch(start) {
+	    case 0 :
+		i += 1; 
+		break;
+	    case 0xc0 :
+		if(msg[printPacketString(msg, (msg[i+1] & 0xff))] == 0)
+		    return i + 2;
+		i += 2;
+		break;
+	    default :
+		i = printOneSequence(msg, i);
+	    }
+	}
+	return i;
+    }
+
+    public static int printOneSequence(byte[] msg, int offset) {
+	int i = offset;
+	int length = msg[i++] & 0xff;
+	while(i <= offset + length) {
+	    System.out.print((char) (msg[i++] & 0xff));
+	}
+	if((msg[i] & 0xff) != 0)
+	    System.out.print(".");
+	return i;
+    }
 }
